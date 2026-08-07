@@ -1,0 +1,180 @@
+# Local LLM Council — default configuration
+# Override per run with CLI flags or a session seed file.
+# Model IDs use each CLI's latest aliases as of install time.
+
+providers:
+  claude:
+    bin: claude
+    # Claude Code non-interactive defaults
+    default_model: sonnet
+    extra_args: []
+    # Opt-in MCP servers (Claude only — grok/kimi CLIs have no --mcp-config).
+    #
+    # The adapter always passes --strict-mcp-config, so your global/user MCP
+    # servers are NOT inherited: only what you list here is loaded. That keeps
+    # critique isolated and runs reproducible across machines.
+    #
+    # `tool_modes` limits which stages a server loads in (omit = all modes).
+    # Modes map to stages via `roles.<stage>.tools` below:
+    #   web     → research          (the only stage with network access)
+    #   minimal → draft / finalize / research_chairman / image_planner
+    #   off     → critique_chairman
+    # Critique peers run at `minimal`, so scope network-touching servers to
+    # [web] to keep critics offline and their reviews reproducible.
+    #
+    # Uncomment to enable. stdio servers use command/args/env; HTTP uses url.
+    mcp_servers: {}
+    #   context7:                  # library/API docs lookup
+    #     command: npx
+    #     args: ["-y", "@upstash/context7-mcp"]
+    #     tool_modes: [web]        # research only — it fetches from the network
+    #   sequential-thinking:       # structured reasoning; no network of its own
+    #     command: npx
+    #     args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+    #     tool_modes: [web, minimal]   # safe for draft/finalize too
+    #   ref:                       # HTTP server example (needs auth)
+    #     url: https://api.ref.tools/mcp
+    #     tool_modes: [web]
+    #     enabled: false           # keep the entry, switch it off
+  grok:
+    bin: grok
+    default_model: grok-4.5
+    extra_args:
+      - --always-approve
+  kimi:
+    bin: kimi
+    default_model: kimi-code/k3
+    # --auto cannot be combined with -p; adapter adds -y/--yolo instead
+    extra_args: []
+
+# Council members — independent researchers / critics
+# provider + model are resolved at invoke time.
+#
+# Claude routing (intentional split):
+#   sonnet  → web research / gather only
+#   opus    → summarize research + all critique work (never sonnet for critique)
+#   fable   → long-form draft + finalize
+members:
+  researcher_claude:
+    provider: claude
+    model: sonnet          # web gather only — not used for critique
+    label: "Claude Sonnet (literature map)"
+    role_slant: literature_map
+
+  critic_claude:
+    provider: claude
+    model: opus            # critique peer (not sonnet)
+    label: "Claude Opus (critic)"
+    role_slant: rigorous_critique
+
+  researcher_grok:
+    provider: grok
+    model: grok-4.5        # latest Grok
+    label: "Grok 4.5 (contrarian / novelty)"
+    role_slant: contrarian_novelty
+
+  researcher_kimi:
+    provider: kimi
+    model: kimi-code/k3    # latest Kimi K3
+    label: "Kimi K3 (methods / empirical)"
+    role_slant: methods_repro
+
+# Stage roles — research is always required
+#
+# `tools` sets the capability level for every seat in that stage, and also
+# selects which mcp_servers load (see tool_modes above):
+#   web      WebSearch + WebFetch + Read/Glob/Grep, permission-mode auto
+#   minimal  Read/Glob/Grep only, no network, permission-mode dontAsk
+#   "off"    no tools at all (must be quoted — bare `off` is YAML false)
+# To let another stage reach the web, change its `tools` to web (e.g. give
+# finalize web access to re-check links). Only do that deliberately: web
+# stages fetch untrusted pages, and critique is intentionally offline so
+# reviews stay reproducible.
+roles:
+  research:
+    participants:
+      - researcher_claude   # sonnet
+      - researcher_grok
+      - researcher_kimi
+    tools: web             # browser / web search ON
+    timeout_seconds: 1800  # 30 min per model
+    parallel: true
+
+  research_chairman:
+    provider: claude
+    model: opus            # summarize / merge research outputs (incl. from Sonnet)
+    tools: minimal
+    timeout_seconds: 900
+
+  draft_writer:
+    provider: claude
+    model: fable           # long-form paper draft
+    tools: minimal
+    timeout_seconds: 1200
+
+  critique:
+    # Claude seat is critic_claude (opus) — deliberately NOT researcher_claude (sonnet)
+    participants:
+      - critic_claude
+      - researcher_grok
+      - researcher_kimi
+    tools: minimal
+    timeout_seconds: 1200
+    parallel: true
+
+  critique_chairman:
+    provider: claude
+    model: opus            # synthesize peer critiques
+    tools: "off"             # quoted: bare `off` is YAML false
+    timeout_seconds: 900
+
+  finalize:
+    provider: claude
+    model: fable
+    tools: minimal
+    timeout_seconds: 1200
+
+  # Post-finalize (separate command: council images)
+  image_planner:
+    provider: claude
+    model: opus
+    tools: minimal
+    timeout_seconds: 900
+
+pipeline:
+  stages:
+    - seed
+    - research
+    - draft
+    - critique
+    - finalize
+  research_required: true
+
+# Output formats (finalize always writes Markdown; Word is a separate export command)
+output:
+  default_format: md          # md | docx
+  auto_export:                # formats written under export/ after finalize
+    - md
+
+# Image generation defaults (council images <session>)
+images:
+  default_count: 4
+  style: "clean technical blog illustration, flat vector, high contrast, professional"
+  include_svg: true
+  include_prompts: true
+
+storage:
+  # Relative to project root (or COUNCIL_HOME)
+  sessions_dir: data/sessions
+
+server:
+  host: 127.0.0.1
+  port: 8765
+
+invoke:
+  # Max concurrent model processes for parallel stages
+  max_parallel: 3
+  # Retry once on non-zero exit
+  retries: 1
+  # Strip common CLI chrome from stdout when possible
+  prefer_text_output: true

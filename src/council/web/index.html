@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Local LLM Council</title>
+  <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f1115;
+      --panel: #171a21;
+      --border: #2a2f3a;
+      --text: #e8eaed;
+      --muted: #9aa0a6;
+      --accent: #7c9cff;
+      --good: #3dd68c;
+      --warn: #f5a524;
+      --bad: #f31260;
+      --mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      --sans: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0;
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      height: 100vh;
+      display: grid;
+      grid-template-columns: 280px 1fr 1.1fr;
+      grid-template-rows: 56px 1fr;
+    }
+    header {
+      grid-column: 1 / -1;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 1.25rem;
+      border-bottom: 1px solid var(--border);
+      background: var(--panel);
+    }
+    header h1 { font-size: 1rem; margin: 0; font-weight: 600; letter-spacing: 0.02em; }
+    header .badge {
+      font-size: 0.75rem; color: var(--muted);
+      border: 1px solid var(--border); border-radius: 999px; padding: 0.2rem 0.6rem;
+    }
+    aside, main, section.preview {
+      overflow: auto;
+      border-right: 1px solid var(--border);
+    }
+    section.preview { border-right: none; }
+    aside { background: #12151b; padding: 1rem; }
+    aside h2, main h2, .preview h2 {
+      font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.08em;
+      color: var(--muted); margin: 0 0 0.75rem;
+    }
+    .session {
+      padding: 0.65rem 0.75rem;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      margin-bottom: 0.5rem;
+      cursor: pointer;
+      background: var(--panel);
+    }
+    .session:hover, .session.active { border-color: var(--accent); }
+    .session .id { font-family: var(--mono); font-size: 0.75rem; color: var(--accent); }
+    .session .title { font-size: 0.9rem; margin-top: 0.2rem; }
+    .session .meta { font-size: 0.75rem; color: var(--muted); margin-top: 0.25rem; }
+    main { padding: 1rem 1.25rem; }
+    .preview { padding: 1rem 1.25rem; background: #0c0e12; }
+    label { display: block; font-size: 0.8rem; color: var(--muted); margin: 0.75rem 0 0.35rem; }
+    input, textarea {
+      width: 100%;
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      color: var(--text);
+      padding: 0.6rem 0.75rem;
+      font: inherit;
+    }
+    textarea { min-height: 90px; resize: vertical; font-family: var(--mono); font-size: 0.85rem; }
+    button {
+      margin-top: 1rem;
+      background: var(--accent);
+      color: #0b1020;
+      border: none;
+      border-radius: 8px;
+      padding: 0.65rem 1rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    button.secondary {
+      background: transparent;
+      color: var(--text);
+      border: 1px solid var(--border);
+      margin-left: 0.5rem;
+    }
+    .timeline { margin-top: 1.25rem; }
+    .event {
+      border-left: 2px solid var(--border);
+      padding: 0.4rem 0 0.4rem 0.75rem;
+      margin-left: 0.25rem;
+      font-size: 0.85rem;
+    }
+    .event .ts { color: var(--muted); font-family: var(--mono); font-size: 0.7rem; }
+    .event.member_complete, .event.stage_complete, .event.session_complete { border-color: var(--good); }
+    .event.member_error, .event.stage_error { border-color: var(--bad); }
+    .event.member_start, .event.stage_start { border-color: var(--accent); }
+    .artifacts { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.75rem; }
+    .artifacts button {
+      margin: 0;
+      font-size: 0.75rem;
+      padding: 0.35rem 0.55rem;
+      background: var(--panel);
+      color: var(--text);
+      border: 1px solid var(--border);
+    }
+    .md {
+      line-height: 1.55;
+      font-size: 0.92rem;
+    }
+    .md h1, .md h2, .md h3 { line-height: 1.25; }
+    .md a { color: var(--accent); }
+    .md code, .md pre {
+      font-family: var(--mono);
+      background: #151922;
+      border-radius: 6px;
+    }
+    .md pre { padding: 0.75rem; overflow: auto; }
+    .md code { padding: 0.1rem 0.3rem; }
+    .status-pill {
+      display: inline-block;
+      font-size: 0.7rem;
+      padding: 0.15rem 0.45rem;
+      border-radius: 999px;
+      border: 1px solid var(--border);
+      text-transform: uppercase;
+    }
+    .status-pill.running { color: var(--warn); border-color: var(--warn); }
+    .status-pill.completed { color: var(--good); border-color: var(--good); }
+    .status-pill.failed { color: var(--bad); border-color: var(--bad); }
+    .empty { color: var(--muted); font-size: 0.9rem; }
+    .row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Local LLM Council</h1>
+    <div class="row">
+      <span class="badge" id="cfgBadge">loading config…</span>
+      <button class="secondary" type="button" id="refreshBtn">Refresh</button>
+    </div>
+  </header>
+
+  <aside>
+    <h2>Sessions</h2>
+    <div id="sessionList" class="empty">No sessions yet.</div>
+  </aside>
+
+  <main>
+    <h2 id="mainTitle">New run</h2>
+    <div id="newRun">
+      <label>Title / research question</label>
+      <input id="title" placeholder="e.g. Agent memory architectures for long-horizon tasks" />
+      <label>Main points (one per line)</label>
+      <textarea id="points" placeholder="- Point one&#10;- Point two&#10;- Hypothesis three"></textarea>
+      <label>Seed links (one per line)</label>
+      <textarea id="links" placeholder="https://...&#10;https://..."></textarea>
+      <label>Goals / constraints (one per line)</label>
+      <textarea id="goals" placeholder="- Academic tone&#10;- Focus 2020–2026"></textarea>
+      <button type="button" id="startBtn">Start council</button>
+    </div>
+
+    <div id="sessionView" style="display:none">
+      <div class="row">
+        <span class="status-pill" id="statusPill">—</span>
+        <span class="badge" id="sessionIdBadge"></span>
+      </div>
+      <div class="artifacts" id="artifacts"></div>
+      <div class="timeline" id="timeline"></div>
+    </div>
+  </main>
+
+  <section class="preview">
+    <h2 id="previewTitle">Artifact preview</h2>
+    <div class="md empty" id="preview">Select an artifact to preview.</div>
+  </section>
+
+  <script>
+    let currentId = null;
+    let es = null;
+
+    const $ = (id) => document.getElementById(id);
+
+    async function loadConfig() {
+      const r = await fetch('/api/config');
+      const c = await r.json();
+      const seats = Object.entries(c.seats || {}).map(([k,v]) => `${k}:${v.model}`).join(' · ');
+      $('cfgBadge').textContent = `research required · ${seats || 'config ok'}`;
+    }
+
+    async function loadSessions() {
+      const r = await fetch('/api/sessions');
+      const list = await r.json();
+      const el = $('sessionList');
+      if (!list.length) {
+        el.innerHTML = '<div class="empty">No sessions yet.</div>';
+        return;
+      }
+      el.innerHTML = '';
+      list.forEach(s => {
+        const d = document.createElement('div');
+        d.className = 'session' + (s.id === currentId ? ' active' : '');
+        d.innerHTML = `<div class="id">${s.id || ''}</div>
+          <div class="title">${escapeHtml(s.title || 'Untitled')}</div>
+          <div class="meta">${s.status || ''} · ${s.stage || ''}</div>`;
+        d.onclick = () => openSession(s.id);
+        el.appendChild(d);
+      });
+    }
+
+    function escapeHtml(s) {
+      return String(s).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+    }
+
+    async function openSession(id) {
+      currentId = id;
+      $('newRun').style.display = 'none';
+      $('sessionView').style.display = 'block';
+      $('mainTitle').textContent = 'Session';
+      $('sessionIdBadge').textContent = id;
+      await refreshSession();
+      if (es) es.close();
+      es = new EventSource(`/api/sessions/${id}/events`);
+      es.onmessage = (ev) => {
+        try {
+          const data = JSON.parse(ev.data);
+          if (data.type === 'ping') return;
+          appendEvent(data);
+          if (['stage_complete','member_complete','session_complete','stage_error'].includes(data.type)) {
+            refreshSession();
+            loadSessions();
+          }
+        } catch (_) {}
+      };
+      loadSessions();
+    }
+
+    async function refreshSession() {
+      if (!currentId) return;
+      const r = await fetch(`/api/sessions/${currentId}`);
+      const s = await r.json();
+      const pill = $('statusPill');
+      pill.textContent = s.status || '—';
+      pill.className = 'status-pill ' + (s.status || '');
+      $('mainTitle').textContent = s.title || 'Session';
+
+      const arts = s.artifacts || {};
+      const box = $('artifacts');
+      box.innerHTML = '';
+      const keys = Object.keys(arts);
+      if (!keys.length) {
+        box.innerHTML = '<span class="empty">Artifacts appear as stages complete.</span>';
+      } else {
+        // Prefer final paper, synthesis, critique, draft
+        const preferred = ['paper_final','research_synthesis','critique_report','paper_v1', ...keys];
+        const seen = new Set();
+        preferred.forEach(k => {
+          if (!arts[k] || seen.has(k)) return;
+          seen.add(k);
+          const b = document.createElement('button');
+          b.textContent = k;
+          b.onclick = () => loadArtifact(arts[k], k);
+          box.appendChild(b);
+        });
+        keys.forEach(k => {
+          if (seen.has(k)) return;
+          const b = document.createElement('button');
+          b.textContent = k;
+          b.onclick = () => loadArtifact(arts[k], k);
+          box.appendChild(b);
+        });
+      }
+
+      // Only rebuild timeline if empty (SSE appends live)
+      const tl = $('timeline');
+      if (!tl.dataset.seeded) {
+        tl.innerHTML = '';
+        (s.events || []).forEach(appendEvent);
+        tl.dataset.seeded = '1';
+      }
+    }
+
+    function appendEvent(ev) {
+      if (!ev || !ev.type || ev.type === 'ping') return;
+      const tl = $('timeline');
+      const d = document.createElement('div');
+      d.className = 'event ' + ev.type;
+      const model = ev.provider ? ` · ${ev.provider}:${ev.model || '?'}` : '';
+      const stage = ev.stage ? `[${ev.stage}] ` : '';
+      d.innerHTML = `<div class="ts">${(ev.ts || '').slice(11,19)}${model}</div>
+        <div>${escapeHtml(stage + (ev.message || ev.type))}</div>`;
+      tl.appendChild(d);
+      tl.scrollTop = tl.scrollHeight;
+    }
+
+    async function loadArtifact(path, label) {
+      const r = await fetch(`/api/sessions/${currentId}/artifact?path=${encodeURIComponent(path)}`);
+      if (!r.ok) {
+        $('preview').textContent = 'Failed to load ' + path;
+        return;
+      }
+      const data = await r.json();
+      $('previewTitle').textContent = label + ' — ' + path;
+      $('preview').className = 'md';
+      $('preview').innerHTML = marked.parse(data.content || '');
+    }
+
+    $('startBtn').onclick = async () => {
+      const title = $('title').value.trim() || 'Untitled research';
+      const main_points = $('points').value.split('\n').map(s => s.replace(/^[-*]\s*/, '').trim()).filter(Boolean);
+      const seed_links = $('links').value.split('\n').map(s => s.trim()).filter(Boolean);
+      const goals = $('goals').value.split('\n').map(s => s.replace(/^[-*]\s*/, '').trim()).filter(Boolean);
+      if (!main_points.length) {
+        alert('Add at least one main point');
+        return;
+      }
+      $('startBtn').disabled = true;
+      try {
+        const r = await fetch('/api/sessions', {
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ title, main_points, seed_links, goals })
+        });
+        const data = await r.json();
+        if (!r.ok) throw new Error(data.detail || 'failed');
+        $('timeline').dataset.seeded = '';
+        await openSession(data.id);
+        await loadSessions();
+      } catch (e) {
+        alert(e.message || e);
+      } finally {
+        $('startBtn').disabled = false;
+      }
+    };
+
+    $('refreshBtn').onclick = () => { loadSessions(); if (currentId) { $('timeline').dataset.seeded = ''; refreshSession(); } };
+
+    loadConfig();
+    loadSessions();
+  </script>
+</body>
+</html>

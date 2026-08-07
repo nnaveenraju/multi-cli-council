@@ -1,0 +1,19 @@
+title: "Agent memory architectures for long-horizon LLM agents"
+
+main_points:
+  - "Long-horizon agents fail when context windows fill; external memory is necessary."
+  - "Vector memory alone is insufficient for multi-step plans with branching state."
+  - "A hybrid of episodic + structured state memory may improve reliability."
+
+seed_links:
+  - "https://arxiv.org/abs/2304.05128"
+  - "https://blog.langchain.dev/memory-for-ai-agents/"
+
+goals:
+  - "Survey competing memory designs and their failure modes"
+  - "Argue for a hybrid memory thesis with concrete open problems"
+  - "Academic tone suitable for a workshop short paper"
+
+constraints:
+  - "Prefer sources from 2020 onward"
+  - "Do not invent citations"
