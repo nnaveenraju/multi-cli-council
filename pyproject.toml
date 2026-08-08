@@ -1,7 +1,7 @@
 [project]
-name = "local-llm-council"
+name = "multi-cli-council"
 version = "0.1.0"
-description = "Local multi-CLI LLM Council for research paper research, critique, and finalization"
+description = "Multi-CLI LLM Council for research paper research, critique, and finalization (inspired by Andrej Karpathy's LLM Council)"
 readme = "README.md"
 requires-python = ">=3.11"
 dependencies = [

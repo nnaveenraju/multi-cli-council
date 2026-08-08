@@ -42,7 +42,7 @@ class RunRequest(BaseModel):
 
 
 def create_app(config: CouncilConfig) -> FastAPI:
-    app = FastAPI(title="Local LLM Council", version="0.1.0")
+    app = FastAPI(title="Multi-CLI Council", version="0.1.0")
     static_dir = Path(__file__).parent / "web"
     if static_dir.exists():
         app.mount("/static", StaticFiles(directory=str(static_dir)), name="static")

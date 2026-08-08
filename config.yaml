@@ -1,4 +1,5 @@
-# Local LLM Council — default configuration
+# Multi-CLI Council — default configuration
+# Inspired by Andrej Karpathy's LLM Council (https://github.com/karpathy/llm-council)
 # Override per run with CLI flags or a session seed file.
 # Model IDs use each CLI's latest aliases as of install time.
 

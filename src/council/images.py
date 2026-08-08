@@ -367,7 +367,7 @@ def _render_svg_figure(
   {arrows}
   {box_svg}
   <text x="{w / 2}" y="{h - 48}" fill="{muted}" font-family="system-ui,sans-serif"
-        font-size="12" text-anchor="middle">Local LLM Council · generated figure</text>
+        font-size="12" text-anchor="middle">Multi-CLI Council · generated figure</text>
 </svg>
 '''
 

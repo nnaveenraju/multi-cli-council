@@ -237,7 +237,7 @@ def render_png_figure(
                 fill=accent,
             )
 
-    foot = "Local LLM Council · generated figure"
+    foot = "Multi-CLI Council · generated figure"
     bbox = draw.textbbox((0, 0), foot, font=f_foot)
     tw = bbox[2] - bbox[0]
     draw.text(((width - tw) / 2, height - margin - 36), foot, fill=muted, font=f_foot)

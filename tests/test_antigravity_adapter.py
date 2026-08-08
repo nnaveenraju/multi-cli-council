@@ -80,4 +80,4 @@ def test_config_wires_antigravity_member():
     spec = config.member_invoke_spec("researcher_antigravity", "research")
     assert spec["provider"] == "antigravity"
     assert spec["tools"] == "web"
-    assert spec["model"] == "gemini-3.1-pro-high"
+    assert spec["model"] == "gemini-3.6-flash-high"

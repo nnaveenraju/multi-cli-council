@@ -1,6 +1,11 @@
-# Local LLM Council
+# Multi-CLI Council
 
-A **local** multi-model council for research and blog articles. You give it **main points + a few seed links**; it **researches** (required, with web tools), **drafts**, **critiques**, and **finalizes** a document. After that, separate commands export **Markdown / Word** and generate **figures**.
+**Inspired by [Andrej Karpathy's LLM Council](https://github.com/karpathy/llm-council).**
+
+![image](images/council_terminals_cover@2x.png)
+
+
+A multi-model council for research and blog articles, rebuilt for **CLI backends** instead of OpenRouter and a **paper/blog pipeline** instead of single-question Q&A. You give it **main points + a few seed links**; it **researches** (required, with web tools), **drafts**, **critiques**, and **finalizes** a document. After that, separate commands export **Markdown / Word** and generate **figures**.
 
 No provider APIs — the app shells out to CLIs you already subscribe to:
 
@@ -9,9 +14,7 @@ No provider APIs — the app shells out to CLIs you already subscribe to:
 | **Claude** | `claude -p` | **sonnet** = research gather · **opus** = research summary + critique + image planning · **fable** = draft + finalize |
 | **Grok** | `grok -p` | `grok-4.5` |
 | **Kimi** | `kimi -p` | `kimi-code/k3` |
-| **Antigravity** | `agy -p` | `gemini-3.1-pro-high` (also flash / Claude / GPT-OSS ids via `agy models`) |
-
-Inspired by [Karpathy’s LLM Council](https://github.com/karpathy/llm-council), adapted for **CLI backends** and a **paper/blog pipeline**.
+| **Antigravity** | `agy -p` | `gemini-3.6-flash-high` (also flash / Claude / GPT-OSS ids via `agy models`) |
 
 ---
 
@@ -69,7 +72,7 @@ Every intermediate file is saved under `data/sessions/{id}/` and streamed to the
 - Logged-in CLIs on your `PATH`: `claude`, `grok`, `kimi`, and optionally `agy` (Antigravity)
 
 ```bash
-cd local_llm_council
+cd multi-cli-council
 uv venv && source .venv/bin/activate
 uv pip install -e .
 
@@ -376,7 +379,7 @@ Claude is split by role (not one model for everything):
 |------|--------|
 | Research + critique peer | Grok **grok-4.5** |
 | Research + critique peer | Kimi **kimi-code/k3** |
-| Research + critique peer | Antigravity **gemini-3.1-pro-high** (`agy`) |
+| Research + critique peer | Antigravity **gemini-3.6-flash-high** (`agy`) |
 
 **Claude aliases that work with Claude Code:** `sonnet`, `opus`, `fable`  
 (or full ids like `claude-fable-5`). Do **not** use `fable5` / `sonnet5` — they are not recognized.
@@ -726,7 +729,7 @@ ruff check src tests
 Project layout:
 
 ```
-local_llm_council/
+multi-cli-council/
   config.yaml
   prompts/
   examples/
@@ -746,4 +749,4 @@ local_llm_council/
 
 ## License / credit
 
-Methodology inspired by [Andrej Karpathy’s LLM Council](https://github.com/karpathy/llm-council). This project is a local, CLI-only adaptation for research/blog workflows with mandatory web research, multi-model critique, Word export, and post-finalize figures.
+**Inspired by [Andrej Karpathy's LLM Council](https://github.com/karpathy/llm-council).** Multi-CLI Council is a CLI-only adaptation for research/blog workflows with mandatory web research, multi-model critique, Word export, and post-finalize figures. It is not affiliated with or endorsed by the original project.

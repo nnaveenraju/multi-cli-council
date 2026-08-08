@@ -20,7 +20,7 @@ from council.storage import SessionStore
 
 app = typer.Typer(
     name="council",
-    help="Local LLM Council — research, critique, and finalize papers via Claude/Grok/Kimi CLIs.",
+    help="Multi-CLI Council — research, critique, and finalize papers via agent CLIs (inspired by Karpathy's LLM Council).",
     add_completion=False,
     no_args_is_help=True,
 )
@@ -53,13 +53,13 @@ def _check_stage(from_stage: str) -> None:
 
 @app.callback()
 def main_callback() -> None:
-    """Local LLM Council."""
+    """Multi-CLI Council."""
 
 
 @app.command()
 def version() -> None:
     """Print version."""
-    console.print(f"local-llm-council {__version__}")
+    console.print(f"multi-cli-council {__version__}")
 
 
 @app.command()
