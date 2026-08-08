@@ -20,7 +20,10 @@ from council.storage import SessionStore
 
 app = typer.Typer(
     name="council",
-    help="Multi-CLI Council — research, critique, and finalize papers via agent CLIs (inspired by Karpathy's LLM Council).",
+    help=(
+        "Multi-CLI Council — research, critique, and finalize papers via agent CLIs "
+        "(inspired by Karpathy's LLM Council)."
+    ),
     add_completion=False,
     no_args_is_help=True,
 )

@@ -55,8 +55,9 @@ providers:
     # `agy models` lists ids like gemini-3.1-pro-high, gemini-3.6-flash-high,
     # claude-opus-4-6-thinking, gpt-oss-120b-medium. Override per member.
     default_model: gemini-3.6-flash-high
-    # NOTE: role `tools` modes are not enforced for Antigravity (no CLI flags
-    # for tool allow/deny). Adapter always uses -p print mode + skip-permissions.
+    # NOTE: role `tools` modes are approximated for Antigravity (no per-tool
+    # allow/deny flags): `web` gets --dangerously-skip-permissions; minimal/off
+    # run --sandbox with no approval grant. Weaker than claude/grok.
     extra_args: []
 
 # Council members — independent researchers / critics
@@ -141,6 +142,11 @@ roles:
     tools: minimal
     timeout_seconds: 1200
     parallel: true
+    # Max chars of research/synthesis.md each critic sees (the draft itself is
+    # never truncated). Raise for source-heavy runs; lower if a -p-style CLI
+    # hits argv limits. The source list is also included when available (it is
+    # written by the research stage, so a resumed session may not have it).
+    synthesis_excerpt_chars: 20000
 
   critique_chairman:
     provider: claude

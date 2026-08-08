@@ -22,7 +22,13 @@ def adapter() -> AntigravityAdapter:
 
 
 def test_print_mode_prompt_and_format(adapter, tmp_path: Path):
-    cmd = _cmd(adapter, tmp_path, prompt="Reply OK", model="gemini-3.6-flash-low")
+    cmd = _cmd(
+        adapter,
+        tmp_path,
+        prompt="Reply OK",
+        model="gemini-3.6-flash-low",
+        tools="web",
+    )
     assert cmd[0] == "agy"
     assert cmd[1] == "-p"
     assert "Reply OK" in cmd[2]
@@ -30,7 +36,21 @@ def test_print_mode_prompt_and_format(adapter, tmp_path: Path):
     assert cmd[cmd.index("--output-format") + 1] == "text"
     assert "--model" in cmd
     assert cmd[cmd.index("--model") + 1] == "gemini-3.6-flash-low"
+
+
+def test_web_mode_auto_approves_permissions(adapter, tmp_path: Path):
+    """Research browses unattended, so it is the one stage that gets the grant."""
+    cmd = _cmd(adapter, tmp_path, prompt="hi", tools="web")
     assert "--dangerously-skip-permissions" in cmd
+    assert "--sandbox" not in cmd
+
+
+@pytest.mark.parametrize("mode", ["minimal", "off"])
+def test_restricted_modes_withhold_permission_grant(adapter, tmp_path: Path, mode):
+    """Critique/peer-review must not carry a blanket tool-approval flag."""
+    cmd = _cmd(adapter, tmp_path, prompt="hi", tools=mode)
+    assert "--dangerously-skip-permissions" not in cmd
+    assert "--sandbox" in cmd
 
 
 def test_print_timeout_maps_from_request(adapter, tmp_path: Path):

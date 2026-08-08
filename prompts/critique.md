@@ -11,6 +11,16 @@ Your label: {{ label }}
 
 {{ research_synthesis_excerpt }}
 
+## Sources gathered during research
+
+URLs the researchers opened. You cannot fetch these — treat them as an
+inventory of what the draft was written from, not as verifiable evidence.
+Use them to spot claims that cite nothing in the synthesis, or topics the
+source list doesn't appear to cover. Do not assess whether a specific URL
+supports a specific claim; you cannot see its contents.
+
+{{ source_union }}
+
 ## Paper draft under review
 
 {{ paper_draft }}

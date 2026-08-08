@@ -275,6 +275,47 @@ def test_member_exception_becomes_failed_result(tmp_path: Path, monkeypatch):
     assert "research" in store.load_meta()["stages_completed"]
 
 
+def test_critique_prompt_has_sources_and_configurable_cap(tmp_path: Path, monkeypatch):
+    """Critics get the full source list, and the synthesis excerpt honors
+    roles.critique.synthesis_excerpt_chars (default 20000)."""
+    import council.pipeline as pl
+
+    pipe, store = _quiet_pipeline(tmp_path)
+    store.write_text("draft/paper_v1.md", "# Draft\n\nBody.\n")
+    store.write_text("research/synthesis.md", "S" * 500)
+    store.write_text("research/source_union.md", "# Unified sources\n\n- https://example.com/a\n")
+    pipe.config.roles["critique"].synthesis_excerpt_chars = 100
+
+    prompts: list[str] = []
+
+    async def fake_invoke(config, **kwargs):
+        prompts.append(kwargs.get("prompt", ""))
+        return ModelResult(
+            ok=True,
+            text="## Critique",
+            provider=kwargs.get("provider", ""),
+            model=kwargs.get("model"),
+        )
+
+    monkeypatch.setattr(pl, "invoke_model", fake_invoke)
+    seed = Seed(title="t", main_points=["p"])
+    asyncio.run(pipe.stage_critique(seed))
+
+    critique_prompts = [p for p in prompts if "## Sources gathered during research" in p]
+    assert critique_prompts, "critics must receive the source list section"
+    for p in critique_prompts:
+        assert "https://example.com/a" in p
+        # 500-char synthesis capped at 100 + truncation marker
+        assert "S" * 100 in p
+        assert "S" * 101 not in p
+        assert "_[truncated]_" in p
+
+
+def test_synthesis_excerpt_default_cap():
+    cfg = load_config()
+    assert cfg.roles["critique"].synthesis_excerpt_chars == 20000
+
+
 # ---------- export: --out outside the session dir ----------
 
 
