@@ -1,0 +1,160 @@
+# Multi-CLI Council — DEBATE / OFFLINE configuration
+# Strategy debates from model knowledge only: NO web search, NO URL fetching.
+# Use with:  council run seed.md --config examples/config.debate.yaml
+#
+# How this differs from config.yaml:
+#   - research.tools is `minimal` (was `web`) — the only stage that could
+#     browse is now offline. Every other stage was already offline.
+#   - Member slants are debate-oriented (free-form strings injected into the
+#     prompt as "Angle: <slant>").
+#   - Seed links are optional; if provided they are treated as text context,
+#     never fetched.
+#
+# CAVEATS:
+#   - Kimi's `tools` modes are NOT enforced by its CLI (no flags for it) —
+#     the Kimi seat keeps its default tool set in every stage.
+#   - The research-stage prompt still says "use web/browser tools"; with
+#     `minimal` the models simply don't have them, so it degrades gracefully.
+
+providers:
+  claude:
+    bin: claude
+    default_model: opus        # no sonnet in debates — opus/fable only
+    extra_args: []
+    mcp_servers:
+      sequential-thinking:       # structured reasoning; no network of its own
+        command: npx
+        args: ["-y", "@modelcontextprotocol/server-sequential-thinking"]
+        tool_modes: [minimal]    # every stage in this config is offline
+  grok:
+    bin: grok
+    default_model: grok-4.5
+    extra_args:
+      - --always-approve
+  kimi:
+    bin: kimi
+    default_model: kimi-code/k3
+    extra_args: []
+  antigravity:
+    bin: agy
+    default_model: gemini-3.6-flash-high
+    extra_args: []
+
+# Council members — debate personas instead of research personas
+members:
+  advocate_claude:
+    provider: claude
+    model: opus
+    label: "Claude Opus (advocate)"
+    role_slant: steelman_for      # strongest case FOR the proposal
+
+  critic_claude:
+    provider: claude
+    model: opus
+    label: "Claude Opus (critic)"
+    role_slant: rigorous_critique
+
+  contrarian_grok:
+    provider: grok
+    model: grok-4.5
+    label: "Grok 4.5 (contrarian)"
+    role_slant: steelman_against  # strongest case AGAINST / second-order risks
+
+  empiricist_kimi:
+    provider: kimi
+    model: kimi-code/k3
+    label: "Kimi K3 (pragmatist)"
+    role_slant: execution_feasibility  # cost, ops, what actually ships
+
+  systems_antigravity:
+    provider: antigravity
+    model: gemini-3.6-flash-high
+    label: "Antigravity Gemini Flash (systems)"
+    role_slant: systems_tradeoffs
+
+# Stage roles — identical structure to config.yaml; the ONLY functional
+# change is research.tools: minimal (no web). Debate happens in research
+# (opening positions) and critique (cross-examination of the draft).
+roles:
+  research:                      # "opening arguments" stage (offline)
+    participants:
+      - advocate_claude
+      - contrarian_grok
+      - empiricist_kimi
+      - systems_antigravity    # optional 4th; remove to run 3
+    tools: minimal             # NO web — knowledge-only debate
+    timeout_seconds: 1800
+    parallel: true
+
+  research_chairman:
+    provider: claude
+    model: opus                # merge opening positions into a position map
+    tools: minimal
+    timeout_seconds: 900
+
+  draft_writer:
+    provider: claude
+    model: fable               # long-form strategy brief
+    tools: minimal
+    timeout_seconds: 1200
+
+  critique:                    # cross-examination of the draft
+    participants:
+      - critic_claude
+      - contrarian_grok
+      - empiricist_kimi
+      - systems_antigravity
+    tools: minimal
+    timeout_seconds: 1200
+    parallel: true
+    synthesis_excerpt_chars: 20000
+
+  critique_chairman:
+    provider: claude
+    model: fable
+    tools: "off"               # quoted: bare `off` is YAML false
+    timeout_seconds: 900
+
+  finalize:
+    provider: claude
+    model: fable
+    tools: minimal
+    timeout_seconds: 1200
+
+  image_planner:
+    provider: claude
+    model: opus
+    tools: minimal
+    timeout_seconds: 900
+
+pipeline:
+  stages:
+    - seed
+    - research
+    - draft
+    - critique
+    - finalize
+  research_required: true      # stage still runs — just offline
+
+output:
+  default_format: md
+  auto_export:
+    - md
+
+images:
+  default_count: 4
+  style: "clean technical blog illustration, flat vector, high contrast, professional"
+  include_svg: true
+  include_prompts: true
+
+storage:
+  sessions_dir: data/sessions
+
+server:
+  host: 127.0.0.1
+  port: 8765
+
+invoke:
+  max_parallel: 4
+  retries: 1
+  prefer_text_output: true

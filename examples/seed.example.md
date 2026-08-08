@@ -5,7 +5,7 @@
 - Vector memory alone is insufficient for multi-step plans with branching state.
 - A hybrid of episodic + structured state memory may improve reliability.
 
-## Links
+## Links (Optional for knowledge debat)
 - https://arxiv.org/abs/2304.05128
 - https://blog.langchain.dev/memory-for-ai-agents/
 
