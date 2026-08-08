@@ -47,17 +47,21 @@ providers:
     default_model: kimi-code/k3
     # kimi -p is already non-interactive; --auto/-y/--yolo cannot be combined
     # with -p, so the adapter strips them if you add them here.
-    # NOTE: role `tools` modes are not enforced for Kimi (no CLI flags for
-    # it) — it runs with its default tool set in every stage.
+    # NOTE: role `tools` modes are NOT enforced for Kimi — the CLI has no
+    # tool allow/deny flags at all. Verified empirically: in a `minimal`
+    # stage it still fetched a URL (FetchURL tool, MCP browser, then curl).
+    # Treat every Kimi seat as network-capable in every stage.
     extra_args: []
   antigravity:
     bin: agy
     # `agy models` lists ids like gemini-3.1-pro-high, gemini-3.6-flash-high,
     # claude-opus-4-6-thinking, gpt-oss-120b-medium. Override per member.
     default_model: gemini-3.6-flash-high
-    # NOTE: role `tools` modes are approximated for Antigravity (no per-tool
+    # NOTE: role `tools` modes are NOT effective for Antigravity (no per-tool
     # allow/deny flags): `web` gets --dangerously-skip-permissions; minimal/off
-    # run --sandbox with no approval grant. Weaker than claude/grok.
+    # run --sandbox with no approval grant — but verified empirically its
+    # fetch tool still browses under --sandbox. Do not rely on agy seats
+    # being offline.
     extra_args: []
 
 # Council members — independent researchers / critics

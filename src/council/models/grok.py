@@ -32,11 +32,21 @@ class GrokAdapter(BaseAdapter):
             cmd.extend(["--system-prompt-override", req.system])
 
         # `minimal` is used by critique seats: offline + non-mutating.
-        # `off` is the same isolation, used by peer review. Both must deny
-        # shell/write tools — web-disable alone leaves Bash/Write available.
+        # `off` is the same isolation, used by peer review.
+        #
+        # Grok's built-in tool names are NOT Claude's — the shell is
+        # `run_terminal_command`, so a deny-list of "Bash,Edit,Write,Shell"
+        # matched nothing and the model simply curled URLs through the
+        # terminal (verified empirically). Use the allow-list instead: only
+        # read_file / list_dir / grep survive. --disable-web-search stays as
+        # belt-and-suspenders for the search/fetch tools.
+        #
+        # Residual gap: grok always grants the MCP meta-tools (search_tool,
+        # use_tool) and `grok -p` has no MCP-disable flag, so MCP servers in
+        # the user's grok config that expose network tools remain reachable.
         if req.tools in ("off", "minimal"):
             cmd.append("--disable-web-search")
-            cmd.extend(["--disallowed-tools", "Bash,Edit,Write,Shell"])
+            cmd.extend(["--tools", "read_file,list_dir,grep"])
 
         if "--always-approve" not in cmd:
             cmd.append("--always-approve")

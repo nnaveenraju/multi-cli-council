@@ -397,7 +397,7 @@ To drop Antigravity and run the original three-vendor council, remove
 `researcher_antigravity` from `roles.research.participants` and
 `roles.critique.participants` in `config.yaml`.
 
-> **Tool-mode caveats:** role `tools` modes (`web` / `minimal` / `off`) are enforced for Claude and Grok via CLI flags. **Kimi** and **Antigravity** have no such flags, so they run with their CLI-default tool set in every stage.
+> **Tool-mode caveats (verified with live fetch probes):** role `tools` modes (`web` / `minimal` / `off`) are fully enforced only for **Claude** (`--tools` + `--strict-mcp-config`). **Grok** is enforced for built-in tools (allow-list `read_file,list_dir,grep` + `--disable-web-search`) but always grants its MCP meta-tools and has no MCP-disable flag — MCP servers in your grok config stay reachable. **Kimi** has no tool flags at all and fetched URLs even in `minimal` stages; **Antigravity**'s `--sandbox` did not stop its fetch tool either. Treat Kimi and Antigravity seats as network-capable in every stage.
 
 Edit seats anytime in `config.yaml` (or `config.local.yaml`).
 
@@ -703,13 +703,21 @@ council run -c examples/config.debate.yaml \
   --session <session_id> --from critique
 ```
 
-Caveats:
+Caveats (each verified with a live fetch probe using a random canary URL):
 
-- **Kimi** (and **Antigravity**, partially) don't enforce `tools` modes — their
-  CLIs lack the flags, so those seats keep their default tool set. Claude and
-  Grok are guaranteed offline.
-- The research prompt still says "use web/browser tools"; with `minimal` the
-  models simply don't have them, so it degrades gracefully rather than erroring.
+- **Claude** seats are genuinely offline (`--tools Read,Glob,Grep` +
+  `--strict-mcp-config`) — replied `CANNOT_BROWSE`.
+- **Grok** seats are offline for built-in tools (allow-list
+  `read_file,list_dir,grep`) — replied `CANNOT_BROWSE`. Residual gap: grok
+  always grants its MCP meta-tools (`search_tool`/`use_tool`) with no
+  MCP-disable flag, so network-capable MCP servers in your grok config
+  remain reachable.
+- **Kimi** seats are **not** isolated: `kimi -p` has no tool flags and it
+  fetched the URL (FetchURL tool, an MCP browser, then curl).
+- **Antigravity** seats are **not** isolated: `--sandbox` + no auto-approval
+  did not stop its fetch tool.
+- The research prompt still says "use web/browser tools"; models without
+  them degrade gracefully rather than erroring.
 - To debate with the default config instead, edit `roles.research.tools` to
   `minimal` in `config.yaml` (or `config.local.yaml`).
 

@@ -37,7 +37,9 @@ things are worth knowing:
 - **Stages with `tools: web` fetch untrusted pages.** Web research output is
   inherently prompt-injection-prone. Critique stages are intentionally offline
   (`minimal` / `"off"`) so reviews can't be steered by a fetched page — keep
-  it that way unless you have a deliberate reason.
+  it that way unless you have a deliberate reason. Note the offline guarantee
+  holds only for **Claude** seats (and for **Grok** built-ins); **Kimi** and
+  **Antigravity** seats can still reach the network in any stage.
 - **Review `extra_args` carefully.** Flags like `--always-approve` (grok) or
   `--dangerously-skip-permissions` (agy) grant the model unattended tool
   execution. Understand what your provider CLI will allow before enabling

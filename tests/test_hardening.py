@@ -168,8 +168,12 @@ def test_kimi_large_prompt_points_at_on_disk_file(tmp_path: Path):
     assert prompt_file.is_file()
 
 
-def test_grok_minimal_disallows_mutating_tools(tmp_path: Path):
-    """Critique seats use tools=minimal and must not keep Bash/Write."""
+def test_grok_minimal_allowlists_readonly_tools(tmp_path: Path):
+    """Critique seats use tools=minimal and must not keep the terminal.
+
+    Grok's tool names are not Claude's (shell is `run_terminal_command`), so
+    a deny-list can't keep up — the adapter must pass an allow-list.
+    """
     from council.models.base import InvokeRequest
     from council.models.grok import GrokAdapter
 
@@ -179,10 +183,9 @@ def test_grok_minimal_disallows_mutating_tools(tmp_path: Path):
         prompt_file = adapter.prepare_prompt_file(req, tmp_path / "_invoke")
         cmd = adapter.build_command(req, prompt_file)
         assert "--disable-web-search" in cmd
-        assert "--disallowed-tools" in cmd
-        denied = cmd[cmd.index("--disallowed-tools") + 1]
-        for tool in ("Bash", "Edit", "Write", "Shell"):
-            assert tool in denied, f"{tool} not denied in tools={tools}: {denied}"
+        assert "--disallowed-tools" not in cmd
+        allowed = cmd[cmd.index("--tools") + 1]
+        assert allowed == "read_file,list_dir,grep"
 
 
 def test_plan_markdown_tolerates_non_dict_figures():
