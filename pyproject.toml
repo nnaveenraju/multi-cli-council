@@ -3,7 +3,24 @@ name = "multi-cli-council"
 version = "0.1.0"
 description = "Multi-CLI LLM Council for research paper research, critique, and finalization (inspired by Andrej Karpathy's LLM Council)"
 readme = "README.md"
+license = "MIT"
+authors = [
+    { name = "Naveen Nadimpalli" },
+]
+keywords = ["llm", "multi-agent", "council", "cli", "research", "critique"]
 requires-python = ">=3.11"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Developers",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: MacOS",
+    "Operating System :: POSIX :: Linux",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Scientific/Engineering :: Artificial Intelligence",
+]
 dependencies = [
     "fastapi>=0.115.0",
     "uvicorn[standard]>=0.32.0",
@@ -18,6 +35,12 @@ dependencies = [
     "python-docx>=1.1.2",
     "pillow>=10.0.0",
 ]
+
+[project.urls]
+Homepage = "https://github.com/nnaveenraju/multi-cli-council"
+Repository = "https://github.com/nnaveenraju/multi-cli-council"
+Issues = "https://github.com/nnaveenraju/multi-cli-council/issues"
+Changelog = "https://github.com/nnaveenraju/multi-cli-council/releases"
 
 [project.optional-dependencies]
 dev = [
@@ -40,7 +63,8 @@ packages = ["src/council"]
 "src" = ""
 
 [tool.hatch.build.targets.wheel.force-include]
-"src/council/web" = "council/web"
+# NOTE: src/council/web ships via `packages` above — do not force-include it
+# here or hatchling fails with a duplicate-path error.
 "prompts" = "prompts"
 
 [tool.ruff]

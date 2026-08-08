@@ -1,5 +1,8 @@
 # Multi-CLI Council
 
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
+[![Python 3.11+](https://img.shields.io/badge/python-3.11+-blue.svg)](https://www.python.org/downloads/)
+
 **Inspired by [Andrej Karpathy's LLM Council](https://github.com/karpathy/llm-council).**
 
 ![image](images/council_terminals_cover@2x.png)
@@ -795,6 +798,17 @@ multi-cli-council/
 
 ---
 
+## Contributing
+
+Contributions are welcome — see [CONTRIBUTING.md](CONTRIBUTING.md) for dev
+setup, checks, and PR conventions. Participation is governed by the
+[Code of Conduct](CODE_OF_CONDUCT.md). Security issues: please report
+privately per [SECURITY.md](SECURITY.md).
+
+---
+
 ## License / credit
+
+Released under the [MIT License](LICENSE).
 
 **Inspired by [Andrej Karpathy's LLM Council](https://github.com/karpathy/llm-council).** Multi-CLI Council is a CLI-only adaptation for research/blog workflows with mandatory web research, multi-model critique, Word export, and post-finalize figures. It is not affiliated with or endorsed by the original project...
