@@ -170,6 +170,10 @@ council run examples/seed.example.yaml
 council run examples/seed.example.md
 council run --points notes.md --links-file links.txt -t "My topic" -g "Workshop tone"
 council run seed.yaml --from research --session 8cafb4df8434
+
+# Offline strategy debate — no web access in any stage
+council run -c examples/config.debate.yaml \
+  --points ./proposal.md -t "Should we go multi-region?" -g "Budget $50k/month"
 ```
 
 ### `council resume`
@@ -518,7 +522,10 @@ Every model invocation also leaves a scratch `_invoke/` dir (prompt.txt) inside 
 ## Configuration
 
 Primary file: **`config.yaml`** in the project root.  
-Optional merge override: **`config.local.yaml`** (same keys; deep-merged).
+Optional merge override: **`config.local.yaml`** (same keys; deep-merged).  
+Alternate ready-made config: **`examples/config.debate.yaml`** — offline
+strategy-debate mode (use with `--config`; see
+[Offline debate mode](#offline-debate-mode-no-web)).
 
 Important sections:
 
@@ -661,6 +668,47 @@ A research seat with the config above yields:
 
 while `critique_chairman` (`tools: "off"`) gets `--tools ''` plus a bare
 `--strict-mcp-config` and no servers.
+
+### Offline debate mode (no web)
+
+The council can run **strategy debates from model knowledge only** — no web
+search, no URL fetching. Browsing is confined to the `research` stage
+(`tools: web`); every other stage is already offline. Setting
+`roles.research.tools: minimal` makes the whole pipeline offline: the research
+stage becomes opening arguments, and critique becomes cross-examination of the
+draft.
+
+A ready-made config ships at **`examples/config.debate.yaml`**. It is identical
+to `config.yaml` except `research.tools: minimal`, with debate-oriented member
+slants (`steelman_for`, `steelman_against`, `execution_feasibility`,
+`systems_tradeoffs` — `role_slant` is free-form prompt text).
+
+```bash
+# Pure flag-driven debate — no seed file, no links at all
+council run \
+  --config examples/config.debate.yaml \
+  --title "Should we build multi-region active-active?" \
+  --points ./arguments.md \
+  --goal "Decide within a $50k/month budget" \
+  --goal "Team of 6, no dedicated SRE"
+
+# With a seed file (links optional — treated as text, never fetched)
+council run seed.md --config examples/config.debate.yaml
+
+# Re-debate the draft only (skip opening positions)
+council run -c examples/config.debate.yaml \
+  --session <session_id> --from critique
+```
+
+Caveats:
+
+- **Kimi** (and **Antigravity**, partially) don't enforce `tools` modes — their
+  CLIs lack the flags, so those seats keep their default tool set. Claude and
+  Grok are guaranteed offline.
+- The research prompt still says "use web/browser tools"; with `minimal` the
+  models simply don't have them, so it degrades gracefully rather than erroring.
+- To debate with the default config instead, edit `roles.research.tools` to
+  `minimal` in `config.yaml` (or `config.local.yaml`).
 
 ---
 
