@@ -52,6 +52,14 @@ class MemberConfig(BaseModel):
     role_slant: str = ""
 
 
+# Default for RoleConfig.synthesis_excerpt_chars. Rationale: ~5k tokens of
+# evidence context — enough for a critic to check claims against sources —
+# while keeping (excerpt + full draft + prompt template) under the ~80k-char
+# argv soft cap that kimi/agy hit with `-p`-style invocation. Tunable per
+# role in config.yaml; this is only the fallback when a config omits the key.
+DEFAULT_SYNTHESIS_EXCERPT_CHARS = 20_000
+
+
 class RoleConfig(BaseModel):
     """Stage role: either a fixed seat (provider/model) or multi-participant."""
 
@@ -61,6 +69,10 @@ class RoleConfig(BaseModel):
     tools: ToolsMode = "minimal"
     timeout_seconds: int = 900
     parallel: bool = True
+    # Critique only: how much of research/synthesis.md goes into each critic's
+    # prompt. The draft is never truncated; the evidence excerpt is. Raise on
+    # source-heavy runs, lower to stay under argv limits for -p-style CLIs.
+    synthesis_excerpt_chars: int = DEFAULT_SYNTHESIS_EXCERPT_CHARS
     overrides: dict[str, dict[str, Any]] = Field(default_factory=dict)
     label: str = ""
 

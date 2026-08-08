@@ -25,18 +25,6 @@ Write a complete first draft of the paper in Markdown, following the binding out
 (Full paper body with sections.)
 
 ---
-
-# Claims Trace
-
-For each major claim: claim → supporting source URL(s) from the synthesis.
-
----
-
-# Outline Followed
-
-Echo the outline you followed.
-
----
 Rules:
 - Academic but readable tone unless goals specify otherwise.
 - Do not invent citations/URLs not present in the research synthesis (you may quote titles that appear there).

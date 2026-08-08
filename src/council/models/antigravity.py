@@ -13,11 +13,13 @@ class AntigravityAdapter(BaseAdapter):
     CLI shape (verified against agy 1.1.x)::
 
         agy -p "<prompt>" --output-format text --model <id> \\
-            --print-timeout <Ns> --dangerously-skip-permissions
+            --print-timeout <Ns> [--dangerously-skip-permissions | --sandbox]
 
     There is no --prompt-file and no per-tool allow/deny flags equivalent to
     Claude/Grok, so large prompts use on-disk file indirection and tool modes
-    are best-effort (same honesty bar as Kimi).
+    are approximated: `web` auto-approves permission prompts, everything else
+    withholds that grant and runs sandboxed. Enforcement is weaker than
+    Claude/Grok — see build_command.
     """
 
     provider = "antigravity"
@@ -46,12 +48,26 @@ class AntigravityAdapter(BaseAdapter):
         if req.timeout_seconds and req.timeout_seconds > 0:
             cmd.extend(["--print-timeout", f"{int(req.timeout_seconds)}s"])
 
-        # Headless: auto-approve tool permission prompts (research needs web).
-        if "--dangerously-skip-permissions" not in cmd:
-            cmd.append("--dangerously-skip-permissions")
-
-        # NOTE: agy has no web-search / tool allow-list flags. `req.tools` is
-        # accepted for interface parity but cannot be enforced here.
+        # agy has no per-tool allow/deny flags, so tool modes are approximated
+        # with the two levers it does expose: permission auto-approval and the
+        # sandbox.
+        #
+        #   web              research needs to browse unattended, so approvals
+        #                    are auto-granted. This is the only stage that gets
+        #                    --dangerously-skip-permissions.
+        #   minimal / off    no auto-approval. In -p mode there is nobody to
+        #                    answer a permission prompt, so a tool call that
+        #                    needs one cannot silently succeed. --sandbox adds
+        #                    terminal restrictions on top.
+        #
+        # This is weaker than Claude/Grok, which deny tools by name. It does not
+        # guarantee the model cannot browse; it removes the blanket grant that
+        # previously applied to every stage.
+        if req.tools == "web":
+            if "--dangerously-skip-permissions" not in cmd:
+                cmd.append("--dangerously-skip-permissions")
+        elif "--sandbox" not in cmd:
+            cmd.append("--sandbox")
 
         for a in self.extra_args:
             if a not in cmd:

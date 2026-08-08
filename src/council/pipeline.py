@@ -313,11 +313,12 @@ class Pipeline:
             label=seat["label"],
             member_id="draft_writer",
         )
-        paper, claims = _split_draft(result.text or "")
+        # _split_draft still strips a Claims Trace / Outline Followed section
+        # if the model emits one anyway (or an old session's draft has them),
+        # but the prompt no longer asks for them and nothing reads them.
+        paper, _claims = _split_draft(result.text or "")
         draft_body = paper or result.text or f"# FAILED\n{result.error}"
         self.store.write_text("draft/paper_v1.md", draft_body)
-        if claims:
-            self.store.write_text("draft/claims_trace.md", claims)
         self.store.write_text(
             "draft/raw_log.txt",
             f"exit={result.exit_code}\n\nSTDERR:\n{result.stderr}\n",
@@ -342,13 +343,26 @@ class Pipeline:
         await self._emit("stage_start", "Critique council", stage="critique")
         paper = self._read("draft/paper_v1.md")
         synthesis = self._read("research/synthesis.md")
-        # Truncate synthesis for critique context if huge
-        if len(synthesis) < 20000:
-            synth_excerpt = synthesis
-        else:
-            synth_excerpt = synthesis[:20000] + "\n\n_[truncated]_\n"
 
         role = self.config.roles["critique"]
+        # Truncate synthesis for critique context if huge — the draft is the
+        # object of review and is never truncated; the evidence excerpt is.
+        cap = role.synthesis_excerpt_chars
+        if len(synthesis) <= cap:
+            synth_excerpt = synthesis
+        else:
+            synth_excerpt = synthesis[:cap] + "\n\n_[truncated]_\n"
+
+        # The source list is small — give critics the complete "what do we have
+        # sources for" checklist when it exists (a resumed session may lack it),
+        # even when the synthesis itself is truncated.
+        source_union_path = self.store.path / "research" / "source_union.md"
+        source_union = (
+            source_union_path.read_text(encoding="utf-8")
+            if source_union_path.exists()
+            else ""
+        )
+
         participants = role.participants
         critiques: dict[str, str] = {}
 
@@ -369,6 +383,7 @@ class Pipeline:
                 role_slant=spec["role_slant"] or member_id,
                 goals=seed.goals_md(),
                 research_synthesis_excerpt=synth_excerpt,
+                source_union=source_union,
                 paper_draft=paper,
             )
             result = await invoke_model(

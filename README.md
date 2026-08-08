@@ -483,7 +483,7 @@ data/sessions/{id}/
     bundle.md
   draft/
     paper_v1.md
-    claims_trace.md
+    raw_log.txt                # draft invoke stderr/exit
   critique/
     independent/*.md
     anonymized/{A..Z}.md       # per-letter anonymized copies
