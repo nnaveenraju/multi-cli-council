@@ -749,4 +749,4 @@ multi-cli-council/
 
 ## License / credit
 
-**Inspired by [Andrej Karpathy's LLM Council](https://github.com/karpathy/llm-council).** Multi-CLI Council is a CLI-only adaptation for research/blog workflows with mandatory web research, multi-model critique, Word export, and post-finalize figures. It is not affiliated with or endorsed by the original project.
+**Inspired by [Andrej Karpathy's LLM Council](https://github.com/karpathy/llm-council).** Multi-CLI Council is a CLI-only adaptation for research/blog workflows with mandatory web research, multi-model critique, Word export, and post-finalize figures. It is not affiliated with or endorsed by the original project...
