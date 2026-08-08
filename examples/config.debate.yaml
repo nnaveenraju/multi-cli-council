@@ -10,11 +10,20 @@
 #   - Seed links are optional; if provided they are treated as text context,
 #     never fetched.
 #
-# CAVEATS:
-#   - Kimi's `tools` modes are NOT enforced by its CLI (no flags for it) —
-#     the Kimi seat keeps its default tool set in every stage.
-#   - The research-stage prompt still says "use web/browser tools"; with
-#     `minimal` the models simply don't have them, so it degrades gracefully.
+# CAVEATS (verified empirically with live fetch probes):
+#   - Claude seats are genuinely offline in every stage here (--tools
+#     Read,Glob,Grep + --strict-mcp-config): verified CANNOT_BROWSE.
+#   - Grok seats are offline for built-in tools (allow-list
+#     read_file,list_dir,grep + --disable-web-search): verified
+#     CANNOT_BROWSE. Residual gap: grok always grants its MCP meta-tools
+#     (search_tool/use_tool) and has no MCP-disable flag, so MCP servers in
+#     your grok config with network tools remain reachable.
+#   - Kimi seats are NOT isolated: kimi -p has no tool flags; it fetched a
+#     URL via FetchURL / MCP browser / curl. Treat Kimi as network-capable.
+#   - Antigravity seats are NOT isolated: --sandbox + no auto-approval did
+#     not stop its fetch tool from browsing.
+#   - The research-stage prompt still says "use web/browser tools"; models
+#     without them degrade gracefully (Claude/Grok answer from knowledge).
 
 providers:
   claude:
