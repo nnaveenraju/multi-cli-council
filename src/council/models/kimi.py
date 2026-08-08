@@ -13,11 +13,21 @@ class KimiAdapter(BaseAdapter):
 
     def build_command(self, req: InvokeRequest, prompt_file: Path) -> list[str]:
         prompt = prompt_file.read_text(encoding="utf-8")
-        # Kimi -p takes the prompt string; for large bodies, point at the file
+        # Kimi only accepts -p <string> (no --prompt-file / stdin prompt mode).
+        # For large bodies, keep the full text on disk and pass a short -p that
+        # points the agent at that file — same pattern as Claude's Read-based
+        # indirection. Fail loudly if the on-disk prompt is missing rather than
+        # shipping a dangling path.
         if len(prompt) > ARG_MAX_SOFT:
+            path = prompt_file.resolve()
+            if not path.is_file():
+                raise FileNotFoundError(
+                    f"Kimi large-prompt file missing (cannot put {len(prompt)} "
+                    f"chars on argv): {path}"
+                )
             prompt = (
-                "Read and follow the full prompt in this file, then print only "
-                f"the final Markdown output:\n{prompt_file.resolve()}"
+                "Open and follow the complete instructions in this file, then "
+                f"print only the final Markdown output:\n{path}"
             )
 
         # IMPORTANT: kimi forbids combining -p/--prompt with --auto or --yolo.

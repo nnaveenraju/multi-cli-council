@@ -8,7 +8,7 @@ providers:
     # Claude Code non-interactive defaults
     default_model: sonnet
     extra_args: []
-    # Opt-in MCP servers (Claude only — grok/kimi CLIs have no --mcp-config).
+    # Opt-in MCP servers (Claude only — grok/kimi/agy CLIs have no --mcp-config).
     #
     # The adapter always passes --strict-mcp-config, so your global/user MCP
     # servers are NOT inherited: only what you list here is loaded. That keeps
@@ -49,6 +49,14 @@ providers:
     # NOTE: role `tools` modes are not enforced for Kimi (no CLI flags for
     # it) — it runs with its default tool set in every stage.
     extra_args: []
+  antigravity:
+    bin: agy
+    # `agy models` lists ids like gemini-3.1-pro-high, gemini-3.6-flash-high,
+    # claude-opus-4-6-thinking, gpt-oss-120b-medium. Override per member.
+    default_model: gemini-3.6-flash-high
+    # NOTE: role `tools` modes are not enforced for Antigravity (no CLI flags
+    # for tool allow/deny). Adapter always uses -p print mode + skip-permissions.
+    extra_args: []
 
 # Council members — independent researchers / critics
 # provider + model are resolved at invoke time.
@@ -82,6 +90,12 @@ members:
     label: "Kimi K3 (methods / empirical)"
     role_slant: methods_repro
 
+  researcher_antigravity:
+    provider: antigravity
+    model: gemini-3.6-flash-high
+    label: "Antigravity Gemini Flash (systems / tradeoffs)"
+    role_slant: systems_tradeoffs
+
 # Stage roles — research is always required
 #
 # `tools` sets the capability level for every seat in that stage, and also
@@ -99,6 +113,7 @@ roles:
       - researcher_claude   # sonnet
       - researcher_grok
       - researcher_kimi
+      - researcher_antigravity  # agy / Gemini (optional 4th; remove to run 3)
     tools: web             # browser / web search ON
     timeout_seconds: 1800  # 30 min per model
     parallel: true
@@ -121,6 +136,7 @@ roles:
       - critic_claude
       - researcher_grok
       - researcher_kimi
+      - researcher_antigravity  # same optional 4th peer as research
     tools: minimal
     timeout_seconds: 1200
     parallel: true
@@ -175,8 +191,8 @@ server:
   port: 8765
 
 invoke:
-  # Max concurrent model processes for parallel stages
-  max_parallel: 3
+  # Max concurrent model processes for parallel stages (4 peers when antigravity is on)
+  max_parallel: 4
   # Retry once on non-zero exit (skipped for missing binaries and timeouts —
   # retrying those cannot succeed / would double the stage's worst-case time)
   retries: 1

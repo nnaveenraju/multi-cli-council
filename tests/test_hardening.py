@@ -151,6 +151,59 @@ def test_web_large_prompt_uses_file_indirection(tmp_path: Path):
     assert str(prompt_file.resolve()) in cmd[-1]
 
 
+def test_kimi_large_prompt_points_at_on_disk_file(tmp_path: Path):
+    """Kimi has no --prompt-file; oversized prompts must not dump full body on argv."""
+    from council.models.base import InvokeRequest
+    from council.models.kimi import KimiAdapter
+
+    adapter = KimiAdapter(bin_path="kimi")
+    big = "x" * (ARG_MAX_SOFT + 10)
+    req = InvokeRequest(cwd=tmp_path, prompt=big, system="s", tools="web")
+    prompt_file = adapter.prepare_prompt_file(req, tmp_path / "_invoke")
+    cmd = adapter.build_command(req, prompt_file)
+    assert "-p" in cmd
+    p_arg = cmd[cmd.index("-p") + 1]
+    assert big not in p_arg
+    assert str(prompt_file.resolve()) in p_arg
+    assert prompt_file.is_file()
+
+
+def test_grok_minimal_disallows_mutating_tools(tmp_path: Path):
+    """Critique seats use tools=minimal and must not keep Bash/Write."""
+    from council.models.base import InvokeRequest
+    from council.models.grok import GrokAdapter
+
+    adapter = GrokAdapter(bin_path="grok")
+    for tools in ("off", "minimal"):
+        req = InvokeRequest(cwd=tmp_path, prompt="hi", system="s", tools=tools)
+        prompt_file = adapter.prepare_prompt_file(req, tmp_path / "_invoke")
+        cmd = adapter.build_command(req, prompt_file)
+        assert "--disable-web-search" in cmd
+        assert "--disallowed-tools" in cmd
+        denied = cmd[cmd.index("--disallowed-tools") + 1]
+        for tool in ("Bash", "Edit", "Write", "Shell"):
+            assert tool in denied, f"{tool} not denied in tools={tools}: {denied}"
+
+
+def test_plan_markdown_tolerates_non_dict_figures():
+    """Malformed planner entries must not crash plan.md generation."""
+    from council.images import _plan_markdown
+
+    md = _plan_markdown(
+        {
+            "figures": [
+                {"title": "Good", "type": "diagram", "caption": "c", "section": "s"},
+                "not-a-dict",
+                None,
+                42,
+            ]
+        }
+    )
+    assert "Good" in md
+    assert "malformed entry" in md
+    assert "not-a-dict" in md
+
+
 # ---------- pipeline: stage validation / failure semantics ----------
 
 

@@ -88,6 +88,20 @@ def test_mcp_tools_are_allowlisted(tmp_path: Path):
         assert "mcp__docs" in allowed
 
 
+def test_mcp_on_minimal_keeps_builtin_read_tools(tmp_path: Path):
+    """MCP allow-list must not strip Read/Glob/Grep used for draft + large prompts."""
+    adapter = ClaudeAdapter(
+        bin_path="claude",
+        mcp_servers={"think": {"command": "npx", "args": ["-y", "x"]}},
+    )
+    cmd = _cmd(adapter, tmp_path, prompt="hi", system="s", tools="minimal")
+    allowed = cmd[cmd.index("--allowedTools") + 1]
+    for tool in ("Read", "Glob", "Grep", "mcp__think"):
+        assert tool in allowed, f"{tool} missing from --allowedTools: {allowed}"
+    # Network tools stay out of minimal even when MCP is attached.
+    assert "WebSearch" not in allowed and "WebFetch" not in allowed
+
+
 def test_disabled_server_is_dropped(tmp_path: Path):
     adapter = ClaudeAdapter(
         bin_path="claude",

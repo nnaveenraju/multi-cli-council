@@ -9,6 +9,7 @@ from collections.abc import AsyncIterator
 from pathlib import Path
 from typing import TYPE_CHECKING
 
+from council.models.antigravity import AntigravityAdapter
 from council.models.base import BaseAdapter, InvokeRequest, ModelResult, ToolsMode
 from council.models.claude import ClaudeAdapter
 from council.models.grok import GrokAdapter
@@ -57,6 +58,7 @@ def get_adapter(provider: str, config: CouncilConfig) -> BaseAdapter:
         "claude": ClaudeAdapter,
         "grok": GrokAdapter,
         "kimi": KimiAdapter,
+        "antigravity": AntigravityAdapter,
     }
     cls = mapping.get(provider)
     if not cls:

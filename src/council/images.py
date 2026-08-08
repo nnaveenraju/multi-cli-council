@@ -215,6 +215,12 @@ def _parse_plan_json(text: str) -> dict[str, Any]:
 def _plan_markdown(plan: dict[str, Any]) -> str:
     lines = ["# Image plan", ""]
     for i, fig in enumerate(plan.get("figures") or [], start=1):
+        if not isinstance(fig, dict):
+            # Planner JSON drift (strings/nulls) must not crash plan.md write.
+            lines.append(f"## Figure {i}: (malformed entry)")
+            lines.append(f"- Raw: {fig!r}")
+            lines.append("")
+            continue
         lines.append(f"## Figure {i}: {fig.get('title', '')}")
         lines.append(f"- Type: {fig.get('type', '')}")
         lines.append(f"- Section: {fig.get('section', '')}")

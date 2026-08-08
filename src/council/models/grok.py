@@ -31,11 +31,12 @@ class GrokAdapter(BaseAdapter):
         if req.system and len(req.system) < 4000:
             cmd.extend(["--system-prompt-override", req.system])
 
-        if req.tools == "off":
+        # `minimal` is used by critique seats: offline + non-mutating.
+        # `off` is the same isolation, used by peer review. Both must deny
+        # shell/write tools — web-disable alone leaves Bash/Write available.
+        if req.tools in ("off", "minimal"):
             cmd.append("--disable-web-search")
             cmd.extend(["--disallowed-tools", "Bash,Edit,Write,Shell"])
-        elif req.tools == "minimal":
-            cmd.append("--disable-web-search")
 
         if "--always-approve" not in cmd:
             cmd.append("--always-approve")

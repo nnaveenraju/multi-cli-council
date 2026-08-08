@@ -9,6 +9,7 @@ No provider APIs — the app shells out to CLIs you already subscribe to:
 | **Claude** | `claude -p` | **sonnet** = research gather · **opus** = research summary + critique + image planning · **fable** = draft + finalize |
 | **Grok** | `grok -p` | `grok-4.5` |
 | **Kimi** | `kimi -p` | `kimi-code/k3` |
+| **Antigravity** | `agy -p` | `gemini-3.1-pro-high` (also flash / Claude / GPT-OSS ids via `agy models`) |
 
 Inspired by [Karpathy’s LLM Council](https://github.com/karpathy/llm-council), adapted for **CLI backends** and a **paper/blog pipeline**.
 
@@ -46,10 +47,10 @@ seed → research* → draft → critique → finalize
 | Stage | What happens | Who runs |
 |-------|----------------|----------|
 | **Seed** | Normalize title, main points, links, goals | Local only |
-| **Research** | Open seed links, find similar sources, write notes | Sonnet + Grok + Kimi (parallel, web tools ON) |
+| **Research** | Open seed links, find similar sources, write notes | Sonnet + Grok + Kimi + Antigravity (parallel, web tools ON) |
 | **Research chairman** | Merge notes into one synthesis | Claude **opus** |
 | **Draft** | First full article from synthesis | Claude **fable** |
-| **Critique** | Independent reviews → anonymized peer rank | Opus + Grok + Kimi |
+| **Critique** | Independent reviews → anonymized peer rank | Opus + Grok + Kimi + Antigravity |
 | **Critique chairman** | Council critique report | Claude **opus** |
 | **Finalize** | Revised article + change log | Claude **fable** |
 | **Export** *(command)* | Markdown and/or Word | Local (`python-docx`) |
@@ -65,7 +66,7 @@ Every intermediate file is saved under `data/sessions/{id}/` and streamed to the
 
 - Python 3.11+
 - [uv](https://github.com/astral-sh/uv) (recommended)
-- Logged-in CLIs on your `PATH`: `claude`, `grok`, `kimi`
+- Logged-in CLIs on your `PATH`: `claude`, `grok`, `kimi`, and optionally `agy` (Antigravity)
 
 ```bash
 cd local_llm_council
@@ -76,6 +77,7 @@ uv pip install -e .
 claude -p "hi" --model sonnet --output-format text
 grok -p "hi" -m grok-4.5 --output-format plain --always-approve
 kimi -p "hi" -m kimi-code/k3 --output-format text
+agy -p "hi" --model gemini-3.6-flash-low --output-format text --dangerously-skip-permissions
 
 # Verify council config + binaries
 council doctor
@@ -374,11 +376,18 @@ Claude is split by role (not one model for everything):
 |------|--------|
 | Research + critique peer | Grok **grok-4.5** |
 | Research + critique peer | Kimi **kimi-code/k3** |
+| Research + critique peer | Antigravity **gemini-3.1-pro-high** (`agy`) |
 
 **Claude aliases that work with Claude Code:** `sonnet`, `opus`, `fable`  
 (or full ids like `claude-fable-5`). Do **not** use `fable5` / `sonnet5` — they are not recognized.
 
-> **Kimi tool caveat:** role `tools` modes (`web` / `minimal` / `off`) are enforced for Claude and Grok via CLI flags. Kimi has no such flags, so it runs with its CLI-default tool set in every stage.
+**Antigravity model ids:** run `agy models` (e.g. `gemini-3.6-flash-high`, `claude-opus-4-6-thinking`).
+
+To drop Antigravity and run the original three-vendor council, remove
+`researcher_antigravity` from `roles.research.participants` and
+`roles.critique.participants` in `config.yaml`.
+
+> **Tool-mode caveats:** role `tools` modes (`web` / `minimal` / `off`) are enforced for Claude and Grok via CLI flags. **Kimi** and **Antigravity** have no such flags, so they run with their CLI-default tool set in every stage.
 
 Edit seats anytime in `config.yaml` (or `config.local.yaml`).
 
@@ -571,9 +580,9 @@ the model happens to load.
 
 ### Enabling MCP servers
 
-MCP is **Claude-only** — the `grok` and `kimi` CLIs have no equivalent flag, and
-listing `mcp_servers` under them is a hard config error rather than a silent
-no-op.
+MCP is **Claude-only** — the `grok`, `kimi`, and `agy` CLIs have no equivalent
+flag, and listing `mcp_servers` under them is a hard config error rather than a
+silent no-op.
 
 Your global/user MCP servers are **not** inherited. The adapter always passes
 `--strict-mcp-config`, so only servers listed here load. That keeps runs
@@ -726,7 +735,7 @@ local_llm_council/
     pipeline.py      # seed → finalize
     export.py        # md / docx
     images.py        # post-finalize figures
-    models/          # claude / grok / kimi adapters
+    models/          # claude / grok / kimi / antigravity adapters
     server.py        # FastAPI + SSE
     web/index.html   # UI
   data/sessions/     # runtime (gitignored)

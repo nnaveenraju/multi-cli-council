@@ -44,16 +44,24 @@ class ClaudeAdapter(BaseAdapter):
         mcp_tools = [f"mcp__{name}" for name in servers]
 
         tools = _TOOLS_BY_MODE.get(req.tools, _TOOLS_BY_MODE["minimal"])
+        builtin_list = [t for t in tools.split(",") if t]
         if req.tools == "web":
             cmd.extend(["--permission-mode", "auto"])
-            # MCP tools must also be allow-listed to be callable.
-            cmd.extend(["--allowedTools", ",".join([tools, *mcp_tools])])
+            # MCP tools must also be allow-listed to be callable. Include
+            # built-ins in the same list (web mode does not pass --tools).
+            cmd.extend(["--allowedTools", ",".join([*builtin_list, *mcp_tools])])
         else:
             cmd.extend(["--permission-mode", "dontAsk"])
             cmd.extend(["--tools", tools])
             if mcp_tools:
-                # `--tools` covers built-ins only; permit the opted-in servers.
-                cmd.extend(["--allowedTools", ",".join(mcp_tools)])
+                # `--tools` covers built-ins for the tool surface, but when
+                # `--allowedTools` is also set the CLI treats it as the
+                # effective allow list. Re-include built-ins so MCP attachment
+                # does not strip Read/Glob/Grep (needed for large-prompt file
+                # indirection and normal draft work).
+                cmd.extend(
+                    ["--allowedTools", ",".join([*builtin_list, *mcp_tools])]
+                )
 
         cmd.append("--strict-mcp-config")
         if servers:
